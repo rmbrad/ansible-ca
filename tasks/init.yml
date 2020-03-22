@@ -1,0 +1,74 @@
+---
+- name: Install pre-requisites
+  pip:
+    name: pyopenssl
+    state: present
+  become: true
+  when: pki_ca_install_pyopenssl
+
+- name: Create PKI public directories
+  file:
+    path: "{{ item.value }}"
+    state: directory
+    mode: 0755
+  loop: "{{ pki_ca_dirs.public | dict2items }}"
+
+- name: Create PKI private directories
+  file:
+    path: "{{ item.value }}"
+    state: directory
+    mode: 0750
+  loop: "{{ pki_ca_dirs.private | dict2items }}"
+
+- name: Generate Root CA private key
+  openssl_privatekey:
+    path: "{{ pki_ca_root_pk }}"
+    state: present
+
+- name: Generate Root CA CSR
+  openssl_csr:
+    path: "{{ pki_ca_root_req }}"
+    privatekey_path: "{{ pki_ca_root_pk }}"
+    subject: "{{ pki_ca_root_subject }}"
+    basic_constraints:
+      - CA:TRUE
+    key_usage:
+      - digitalSignature
+      - cRLSign
+      - keyCertSign
+
+- name: Self-sign Root certificate
+  openssl_certificate:
+    path: "{{ pki_ca_root_cert }}"
+    privatekey_path: "{{ pki_ca_root_pk }}"
+    csr_path: "{{ pki_ca_root_req }}"
+    provider: selfsigned
+    selfsigned_not_before: "{{ pki_ca_startdate }}"
+    selfsigned_not_after: "{{ pki_ca_root_enddate }}"
+
+- name: Generate cluster CA private key
+  openssl_privatekey:
+    path: "{{ pki_ca_cluster_pk }}"
+    state: present
+
+- name: Generate cluster CA CSR
+  openssl_csr:
+    path: "{{ pki_ca_cluster_req }}"
+    privatekey_path: "{{ pki_ca_cluster_pk }}"
+    subject: "{{ pki_ca_cluster_ca_subject }}"
+    basic_constraints:
+      - CA:TRUE
+    key_usage:
+      - digitalSignature
+      - cRLSign
+      - keyCertSign
+
+- name: Sign cluster CA certificate
+  openssl_certificate:
+    path: "{{ pki_ca_cluster_cert }}"
+    csr_path: "{{ pki_ca_cluster_req }}"
+    provider: ownca
+    ownca_path: "{{ pki_ca_root_cert }}"
+    ownca_privatekey_path: "{{ pki_ca_root_pk }}"
+    ownca_not_before: "{{ pki_ca_startdate }}"
+    ownca_not_after: "{{ pki_ca_root_sign_enddate }}"

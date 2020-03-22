@@ -1,0 +1,44 @@
+---
+- name: Fetch CSR to sign
+  fetch:
+    src: "{{ pki_ca_cert_req_input }}"
+    dest: "{{ pki_ca_cert_req }}"
+    flat: True
+
+- name: Sign certificate
+  pki_ca_openssl_certificate:
+    path: "{{ pki_ca_cert_cert }}"
+    csr_path: "{{ pki_ca_cert_req }}"
+    select_crypto_backend: pyopenssl
+    provider: ownca
+    ownca_path: "{{ pki_ca_cluster_cert }}"
+    ownca_privatekey_path: "{{ pki_ca_cluster_pk }}"
+    ownca_not_before: "{{ pki_ca_startdate }}"
+    ownca_not_after: "{{ pki_ca_cluster_sign_enddate }}"
+    ownca_copy_extensions: copy
+    ownca_basic_constraints:
+      - CA:TRUE
+    ownca_basic_constraints_critical: True
+    ownca_key_usage:
+      - digitalSignature
+      - cRLSign
+      - keyCertSign
+    ownca_key_usage_critical: True
+  delegate_to: localhost
+  become: no
+
+- name: Write signed certficate
+  copy:
+    src: "{{ pki_ca_cert_cert }}"
+    dest: "{{ pki_ca_cert_dest }}/{{ pki_ca_cert_name }}.pem"
+    owner: "{{ pki_ca_cert_owner }}"
+    group: "{{ pki_ca_cert_group }}"
+    mode: 0644
+
+- name: Write signed certificate chain
+  copy:
+    dest: "{{ pki_ca_cert_dest }}/{{ pki_ca_cert_name }}-chain.pem"
+    content: "{{ '\n'.join([lookup('file', pki_ca_cert_cert), lookup('file', pki_ca_cluster_cert)]) }}"
+    owner: "{{ pki_ca_cert_owner }}"
+    group: "{{ pki_ca_cert_group }}"
+    mode: 0644

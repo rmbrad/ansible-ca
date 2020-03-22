@@ -1,0 +1,19 @@
+---
+- name: Read Root CA certificate
+  slurp:
+    src: "{{ pki_ca_root_cert }}"
+  register: pki_ca_cert_slurp
+  delegate_to: "{{ pki_ca_host }}"
+
+- name: Copy Root CA certificate to node
+  copy:
+    dest: /etc/pki/ca-trust/source/anchors/{{ pki_ca_name }}.pem
+    content: "{{ pki_ca_cert_slurp['content'] | b64decode }}"
+    mode: 0744
+  become: yes
+  register: pki_ca_root_copy
+
+- name: Update CA Trust
+  command: update-ca-trust extract
+  become: yes
+  when: pki_ca_root_copy.changed

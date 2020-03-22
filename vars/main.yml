@@ -1,0 +1,27 @@
+---
+pki_ca_dirs:
+  public:
+    root_ca_certdir: "{{ pki_ca_root }}/root/subject"
+    cluster_ca_certdir: "{{ pki_ca_root }}/cluster/subject"
+    cluster_ca_certs: "{{ pki_ca_root }}/cluster/certs"
+    cluster_ca_reqs: "{{ pki_ca_root }}/cluster/requests"
+  private:
+    root_ca_pkdir: "{{ pki_ca_root }}/root/private"
+    cluster_ca_pkdir: "{{ pki_ca_root }}/cluster/private"
+
+pki_ca_root_pk: "{{ pki_ca_dirs.private.root_ca_pkdir }}/key.pem"
+pki_ca_root_req: "{{ pki_ca_dirs.public.root_ca_certdir }}/request.pem"
+pki_ca_root_cert: "{{ pki_ca_dirs.public.root_ca_certdir }}/cert.pem"
+
+pki_ca_cluster_pk: "{{ pki_ca_dirs.private.cluster_ca_pkdir }}/key.pem"
+pki_ca_cluster_req: "{{ pki_ca_dirs.public.cluster_ca_certdir }}/request.pem"
+pki_ca_cluster_cert: "{{ pki_ca_dirs.public.cluster_ca_certdir }}/cert.pem"
+
+pki_ca_startdate: "+0d"
+pki_ca_root_enddate: "+{{ pki_ca_base_ttl_days * pki_ca_root_ttl_multiplier }}d"
+pki_ca_root_sign_enddate: "+{{ pki_ca_base_ttl_days * pki_ca_root_sign_multiplier }}d"
+pki_ca_cluster_sign_enddate: "+{{ pki_ca_base_ttl_days * pki_ca_cluster_sign_multiplier }}d"
+
+pki_ca_cert_base: "{{ ansible_hostname }}-{{ pki_ca_cert_name }}"
+pki_ca_cert_req: "{{ pki_ca_dirs.public.cluster_ca_reqs }}/{{ pki_ca_cert_base }}.csr"
+pki_ca_cert_cert: "{{ pki_ca_dirs.public.cluster_ca_certs }}/{{ pki_ca_cert_base }}.pem"

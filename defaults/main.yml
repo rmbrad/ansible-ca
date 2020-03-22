@@ -1,0 +1,51 @@
+---
+pki_ca_install_pyopenssl: no
+pki_ca_host: localhost
+
+pki_ca_root: secrets/pki/ca
+
+pki_ca_base_ttl_days: 365
+pki_ca_root_ttl_multiplier: 10
+pki_ca_root_sign_multiplier: 5
+pki_ca_cluster_sign_multiplier: 2 
+
+pki_ca_domain: "{{ ansible_domain if ansible_domain else ansible_hostname }}"
+
+pki_ca_country: ""
+pki_ca_state: ""
+pki_ca_locality: ""
+pki_ca_organization: "{{ pki_ca_domain.split('.') | first | capitalize }}"
+pki_ca_organizational_unit: ""
+
+pki_ca_name: "{{ pki_ca_organizational_unit | default('ca') | lower | regex_replace('\\s+', '_') }}"
+
+pki_ca_root_subject:
+  C: "{{ pki_ca_country }}"
+  ST: "{{ pki_ca_state }}"
+  L: "{{ pki_ca_locality }}"
+  O: "{{ pki_ca_organization }}"
+  OU: "{{ pki_ca_organizational_unit }}"
+  CN: "{{ pki_ca_organization }} Root Certificate Authority"
+
+pki_ca_cluster_ca_subject:
+  C: "{{ pki_ca_country }}"
+  ST: "{{ pki_ca_state }}"
+  L: "{{ pki_ca_locality }}"
+  O: "{{ pki_ca_organization }}"
+  OU: "{{ pki_ca_organizational_unit }}"
+  CN: "{{ pki_ca_organization }} Service Certificate Authority"
+
+pki_ca_cert_name: service
+pki_ca_cert_common_name: Service
+
+pki_ca_cert_subject:
+  C: "{{ pki_ca_country }}"
+  ST: "{{ pki_ca_state }}"
+  L: "{{ pki_ca_locality }}"
+  O: "{{ pki_ca_organization }}"
+  OU: "{{ pki_ca_organizational_unit }}"
+  CN: "{{ pki_ca_cert_common_name }}"
+
+pki_ca_cert_sans:
+  - DNS:{{ pki_ca_cert_common_name }}
+  - IP:{{ ansible_default_ipv4.address }}

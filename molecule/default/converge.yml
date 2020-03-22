@@ -1,0 +1,36 @@
+---
+- name: Initialize
+  hosts: its-centos7-ca
+  tasks:
+    - name: "Include ansible-ca"
+      include_role:
+        name: "ansible-ca"
+      vars:
+        pki_ca_command: init
+        pki_ca_install_pyopenssl: yes
+
+- name: Trust
+  hosts: all
+  vars:
+    pki_ca_host: its-centos7-ca
+  tasks:
+    - name: "Trust CA certificate"
+      include_role:
+        name: "ansible-ca"
+      vars:
+        pki_ca_command: trust
+
+- name: Issue
+  hosts: its-centos7-client
+  vars:
+    pki_ca_host: its-centos7-ca
+  tasks:
+    - name: "Issue certificate"
+      include_role:
+        name: "ansible-ca"
+      vars:
+        pki_ca_command: issue
+        pki_ca_cert_dest: cert
+        pki_ca_cert_owner: vagrant
+        pki_ca_cert_group: vagrant
+        pki_ca_install_pyopenssl: yes

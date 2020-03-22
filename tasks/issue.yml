@@ -1,0 +1,90 @@
+---
+- name: Install pre-requisites
+  pip:
+    name: pyopenssl
+  become: true
+  when: pki_ca_install_pyopenssl
+
+- name: Create certificate directory
+  file:
+    path: "{{ pki_ca_cert_dest }}"
+    owner: "{{ pki_ca_cert_owner }}"
+    group: "{{ pki_ca_cert_group }}"
+    mode: 0755
+    state: directory
+
+- name: Generate private key
+  openssl_privatekey:
+    path: "{{ pki_ca_cert_dest }}/{{ pki_ca_cert_name }}.key"
+    owner: "{{ pki_ca_cert_owner }}"
+    group: "{{ pki_ca_cert_group }}"
+
+- name: Generate CSR
+  openssl_csr:
+    path: "{{ pki_ca_cert_dest }}/{{ pki_ca_cert_name }}.csr"
+    owner: "{{ pki_ca_cert_owner }}"
+    group: "{{ pki_ca_cert_group }}"
+    privatekey_path: "{{ pki_ca_cert_dest }}/{{ pki_ca_cert_name }}.key"
+    subject: "{{ pki_ca_cert_subject }}"
+    subject_alt_name: "{{ pki_ca_cert_sans }}"
+
+- name: Fetch CSR to sign
+  slurp:
+    src: "{{ pki_ca_cert_dest }}/{{ pki_ca_cert_name }}.csr"
+  register: pki_ca_cert_slurp
+
+- name: Copy CSR to CA
+  copy:
+    dest: "{{ pki_ca_cert_req }}"
+    content: "{{ pki_ca_cert_slurp['content'] | b64decode }}"
+  delegate_to: "{{ pki_ca_host }}"
+  register: pki_ca_cert_req_copy
+
+- name: Sign certificate
+  pki_ca_openssl_certificate:
+    path: "{{ pki_ca_cert_cert }}"
+    select_crypto_backend: pyopenssl
+    csr_path: "{{ pki_ca_cert_req }}"
+    provider: ownca
+    ownca_path: "{{ pki_ca_cluster_cert }}"
+    ownca_privatekey_path: "{{ pki_ca_cluster_pk }}"
+    ownca_not_before: "{{ pki_ca_startdate }}"
+    ownca_not_after: "{{ pki_ca_cluster_sign_enddate }}"
+    ownca_copy_extensions: copy
+    ownca_basic_constraints:
+      - CA:FALSE
+    ownca_basic_constraints_critical: True
+    ownca_key_usage:
+      - digitalSignature
+      - keyEncipherment
+    ownca_key_usage_critical: True
+    ownca_extended_key_usage:
+      - serverAuth
+      - clientAuth
+  delegate_to: "{{ pki_ca_host }}"
+  when: pki_ca_cert_req_copy['changed']
+
+- name: Fetch signed certificate
+  slurp:
+    src: "{{ item }}"
+  loop:
+    - "{{ pki_ca_cert_cert }}"
+    - "{{ pki_ca_cluster_cert }}"
+  register: pki_ca_cert_slurp
+  delegate_to: "{{ pki_ca_host }}"
+
+- name: Write saved certificate
+  copy:
+    dest: "{{ pki_ca_cert_dest }}/{{ pki_ca_cert_name }}.pem"
+    content: "{{ pki_ca_cert_slurp['results'][0]['content'] | b64decode }}"
+    owner: "{{ pki_ca_cert_owner }}"
+    group: "{{ pki_ca_cert_group }}"
+    mode: 0644
+
+- name: Write certificate chain
+  copy:
+    dest: "{{ pki_ca_cert_dest }}/{{ pki_ca_cert_name }}-chain.pem"
+    content: "{{ ''.join([pki_ca_cert_slurp['results'][0]['content'] | b64decode, pki_ca_cert_slurp['results'][1]['content'] | b64decode]) }}"
+    owner: "{{ pki_ca_cert_owner }}"
+    group: "{{ pki_ca_cert_group }}"
+    mode: 0644

@@ -1,0 +1,3 @@
+---
+- name: Run specified command
+  include_tasks: "{{ pki_ca_command }}.yml"

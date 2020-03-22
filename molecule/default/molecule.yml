@@ -1,0 +1,22 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: vagrant
+lint: |
+  set -e
+  yamllint .
+  # ansible-lint .
+platforms:
+  - name: its-centos7-ca
+    box: infotechsoft/centos7
+    memory: 512
+    cpus: 1
+  - name: its-centos7-client
+    box: infotechsoft/centos7
+    memory: 512
+    cpus: 1
+provisioner:
+  name: ansible
+verifier:
+  name: ansible
