@@ -40,6 +40,12 @@
   delegate_to: "{{ pki_ca_host }}"
   register: pki_ca_cert_req_copy
 
+- name: Check if signed certificate exists
+  stat:
+    path: "{{ pki_ca_cert_cert }}"
+  delegate_to: "{{ pki_ca_host }}"
+  register: pki_ca_cert_stat
+
 - name: Sign certificate
   pki_ca_openssl_certificate:
     path: "{{ pki_ca_cert_cert }}"
@@ -62,7 +68,7 @@
       - serverAuth
       - clientAuth
   delegate_to: "{{ pki_ca_host }}"
-  when: pki_ca_cert_req_copy['changed']
+  when: pki_ca_cert_stat.stat.exists == False or pki_ca_cert_req_copy['changed']
 
 - name: Fetch signed certificate
   slurp:

@@ -1,0 +1,12 @@
+---
+- name: "Prepare"
+  hosts: all
+  become: true
+  tasks:
+    - name: "Install pip"
+      package:
+        name: 
+          - python-pip
+          - iproute
+          - openssl
+        state: present

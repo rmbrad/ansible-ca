@@ -2,19 +2,15 @@
 - name: Verify
   hosts: its-centos7-client
   tasks:
-  - name: Example assertion
-    assert:
-      that: true
+    - name: Read cluster CA certificate
+      slurp:
+        src: 'secrets/pki/ca/cluster/subject/cert.pem'
+      register: cluster_cert
+      delegate_to: its-centos7-ca
 
-  - name: Read cluster CA certificate
-    slurp:
-      src: 'secrets/pki/ca/cluster/subject/cert.pem'
-    register: cluster_cert
-    delegate_to: its-centos7-ca
+    - name: Write cluster CA certificate
+      copy:
+        dest: 'cert/intermediate.pem'
+        content: "{{ cluster_cert['content'] | b64decode }}"
 
-  - name: Write cluster CA certificate
-    copy:
-      dest: 'cert/intermediate.pem'
-      content: "{{ cluster_cert['content'] | b64decode }}"
-
-  - command: openssl verify -untrusted cert/intermediate.pem cert/service.pem
+    - command: openssl verify -untrusted cert/intermediate.pem cert/service.pem

@@ -1,0 +1,17 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+platforms:
+  - name: pki-client
+    image: docker.io/pycontribs/centos:7
+    pre_build_image: true
+provisioner:
+  name: ansible
+  inventory:
+    host_vars:
+      localhost:
+        ansible_python_interpreter: "/usr/bin/env python"
+verifier:
+  name: ansible

@@ -1,0 +1,8 @@
+---
+  - name: Delete CA directory
+    hosts: localhost
+    tasks:
+      - name: Delete directory
+        file:
+          path: secrets/
+          state: absent

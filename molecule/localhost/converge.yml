@@ -1,0 +1,32 @@
+---
+  - name: Initialize
+    hosts: localhost
+    tasks:
+      - name: "Initialize local CA"
+        include_role:
+          name: "ansible-ca"
+        vars:
+          pki_ca_command: init
+          pki_ca_install_pyopenssl: no
+  
+  - name: Trust
+    hosts: pki-client
+    tasks:
+      - name: "Trust CA certificate"
+        include_role:
+          name: "ansible-ca"
+        vars:
+          pki_ca_command: trust
+  
+  - name: Issue
+    hosts: pki-client
+    tasks:
+      - name: "Issue certificate"
+        include_role:
+          name: "ansible-ca"
+        vars:
+          pki_ca_command: issue
+          pki_ca_cert_dest: cert
+          pki_ca_cert_owner: root
+          pki_ca_cert_group: root
+          pki_ca_install_pyopenssl: yes
